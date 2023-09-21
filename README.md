@@ -1,14 +1,27 @@
 # UMD Region Changer
 ##### Presented by ARK-4 Team
 
-1. After compiling the files will be in `dist`
+<br />
 
-2. After copying `UMD_Region_Changer` to `ms0:/PSP/GAME` make sure your UMD door is **NOT** closed/detected then run it.
+### Compiling
 
-3. Menu shows which region you want to your UMD Drive to mimic. Please keep UMD out until XMB displays.
+1. `make` use ARK-4 SDK
 
-4. Select and enjoy!
+2. After compiling the files will be in `dist`
 
+3. After copying `UMD_Region_Changer` to `ms0:/PSP/GAME` make sure your UMD door is NOT closed/detected then run it.
+
+
+## Setup & Install
+1. MAKE SURE UMD IS NOT INSERTED
+
+2. Run UMD Region Changer
+
+3. Choose the region
+
+4. Once XMB display insert UMD of you selected Region
+
+5. Play and enjoy your Movie 
 <hr/>
 
 <p><b>NOTE:</b> This is not persistant, if you take the UMD out and reinsert it will revert to default region.</p>
