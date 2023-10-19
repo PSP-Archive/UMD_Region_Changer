@@ -45,7 +45,7 @@ int main(int argc, char *args[]) {
 
 
 	pspDebugScreenClear();
-SceCtrlData pad;
+	SceCtrlData pad;
 
 	char arrow[] = "-> ";
 
@@ -139,7 +139,7 @@ SceCtrlData pad;
 				pspDebugScreenSetTextColor(0x0000FF);
 				printf("Press (X) to accept and return back to XMB");
 			}
-			sceKernelDelayThread(80000);
+			sceKernelDelayThread(100000);
 			offset=6;
 		}
 		// BUTTON UP
@@ -179,9 +179,9 @@ SceCtrlData pad;
 		// ACCEPT BUTTON
 		else if(pad.Buttons & PSP_CTRL_CROSS) {
 			// Need to not hardcode this for category lite reasons. 
-			char *mod = "ms0:/PSP/GAME/UMD_Region_Changer/UMD_Region_Changer.prx";
-			char *region_path = "ms0:/PSP/GAME/UMD_Region_Changer/region.txt";
-			static const int size = 100*1024;
+			char mod[] = "ms0:/PSP/GAME/UMD_Region_Changer/UMD_Region_Changer.prx";
+			char region_path[] = "ms0:/PSP/GAME/UMD_Region_Changer/region.txt";
+			const int size = 100*1024;
 			static u8 buf[100*1024];
 			SceUID byteRead;
 			SceUID module;

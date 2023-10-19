@@ -11,20 +11,20 @@
 
 3. After copying `UMD_Region_Changer` to `ms0:/PSP/GAME` make sure your UMD door is NOT closed/detected then run it.
 
+4. If you accidently do have your UMD door closed, once the XMB is loaded you can just open and close the UMD door and the UMD will be allowed to be played.
+
 
 ## Setup & Install
-1. MAKE SURE UMD IS NOT INSERTED
+1. Run UMD Region Changer
 
-2. Run UMD Region Changer
+2. Choose the region
 
-3. Choose the region
+3. Once XMB display insert UMD of you selected Region
 
-4. Once XMB display insert UMD of you selected Region
-
-5. Play and enjoy your Movie 
+4. Play and enjoy your Movie 
 <hr/>
 
-<p><b>NOTE:</b> This is not persistant, if you take the UMD out and reinsert it will revert to default region.</p>
+<p><b>NOTE:</b> This is not persistant, if you restart your PSP the UMD Drive will default back to its original state.</p>
 
 
 ### Credits:

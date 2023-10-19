@@ -11,23 +11,18 @@
 #include <stdio.h>
 #include <string.h>
 
-extern void colorDebug(u32 color);
+#define NOP 0
+#define JUMP(f) (0x08000000 | (((unsigned int)(f) >> 2) & 0x03ffffff))
 
-PSP_MODULE_INFO("UMDREGION_Module", 1, 1, 0);
-/* Define the main thread's attribute value (optional) */
-PSP_HEAP_SIZE_KB(4096);
+PSP_MODULE_INFO("UMDREGION_Module", 0x3007, 1, 0);
 
 STMOD_HANDLER previous;
 
-static int _sceKernelBootFromForUmdMan(void) {
-	return 0x20;
-}
-
-static int regions[] = {
-	0, // default
-	3, // Japan
-    4, // America
-    5, // Europe
+enum {
+	REGION_DEFAULT = 0, // default
+	REGION_JAPAN = 3, // Japan
+    REGION_AMERICA = 4, // America
+    REGION_EUROPE = 5, // Europe
 };
 
 static void* umd_buf = NULL;
@@ -75,87 +70,92 @@ void flushCache()
 }
 
 
-// Return Boot Status
-int isSystemBooted(void)
-{
+static int region_num = 0;
 
-    // Find Function
-    int (* _sceKernelGetSystemStatus)(void) = (void*)sctrlHENFindFunction("sceSystemMemoryManager", "SysMemForKernel", 0x452E3696);
+void read_region_file(){
+    char byte;
+	SceUID region = sceIoOpen(UMD_REGION_TYPE, PSP_O_RDONLY, 0777);
+	sceIoRead(region, &byte, 1);
+	sceIoClose(region);
+	
+	region_num = byte - '0';
+}
+
+// Find Import Library Pointer
+SceLibraryStubTable * find_Import_Lib(SceModule2 * pMod, char * library)
+{
+    // Invalid Arguments
+    if(pMod == NULL || library == NULL) return NULL;
     
-    // Get System Status
-    int result = _sceKernelGetSystemStatus();
+    // Import Stub Table Start Address
+    void * stubTab = pMod->stub_top;
+    
+    // Iterate Stubs
+    int i = 0; while(i < pMod->stub_size)
+    {
+        // Cast Import Table
+        SceLibraryStubTable * pImp = (SceLibraryStubTable *)(stubTab + i);
         
-    // System booted
-    if(result == 0x20000) return 1;
+        // Matching Library discovered
+        if(pImp->libname != NULL && strcmp(pImp->libname, library) == 0)
+        {
+            // Return Address
+            return pImp;
+        }
+        
+        // Move Pointer
+        i += pImp->len * 4;
+    }
     
-    // Still booting
+    // Import Library not found
+    return NULL;
+}
+
+// Find Import Stub Address
+unsigned int find_Import_ByNID(SceModule2 * pMod, char * library, unsigned int nid)
+{
+    // Find Import Library
+    SceLibraryStubTable * pImp = find_Import_Lib(pMod, library);
+    
+    // Found Import Library
+    if(pImp != NULL)
+    {
+        // Iterate Imports
+        int i = 0; for(; i < pImp->stubcount; i++)
+        {
+            // Matching Function NID
+            if(pImp->nidtable[i] == nid)
+            {
+                // Return Function Stub Address
+                return (unsigned int)(pImp->stubtable + 8 * i);
+            }
+        }
+    }
+    
+    // Import Stub not found
     return 0;
 }
 
-static int region_num;
-
-void patch_sceUmdMan_driver(SceModule2* mod)
-{
-    int apitype = sceKernelInitApitype();
-    if (apitype == 0x152 || apitype == 0x141) {
-        hookImportByNID(mod, "InitForKernel", 0x27932388, _sceKernelBootFromForUmdMan);
-    }   
-}
-
-
 void PSPOnModuleStart(SceModule2 * mod){
-    // System fully booted Status
-    static int booted = 0;
-	char byte;
-	SceUID region = sceIoOpen(UMD_REGION_TYPE, PSP_O_RDONLY, 0777);
-	SceUID region_type = sceIoRead(region, &byte, 1);
-	int convert_byte = byte - '0';
-	sceIoClose(region);
-
-	if(convert_byte == 3) // Japan
-		region_num = regions[1];
-	else if(convert_byte == 4) // America
-		region_num = regions[2];
-	else if(convert_byte == 5) // America
-		region_num = regions[3];
-	else 								// Default
-		region_num = regions[0];
 
     
     if(strcmp(mod->modname, "sceUmdMan_driver") == 0) {
-		patch_sceUmdMan_driver(mod);
         patch_umd_idslookup(mod);
         goto flush;
     }
 
     if (strcmp(mod->modname, "vsh_module") == 0){
-        if (region_num){
-            patch_vsh_region_check(mod);
-        }
+        patch_vsh_region_check(mod);
         goto flush;
     }
 
     if (strcmp(mod->modname, "impose_plugin_module") == 0){
-        if (region_num)
-        {
-            SceUID kthreadID = sceKernelCreateThread( "umd_region_change", &patch_umd_thread, 1, 0x40, PSP_THREAD_ATTR_VFPU, NULL);
-            if (kthreadID >= 0){
-				printf("Starting patch_umd_thread");
-                // start thread and wait for it to end
-                sceKernelStartThread(kthreadID, 0, NULL);
-            }
-			else {
-				printf("Error starting Thread: %d\n", kthreadID);
-			}
+        SceUID kthreadID = sceKernelCreateThread( "umd_region_change", &patch_umd_thread, 1, 0x20000, PSP_THREAD_ATTR_VFPU, NULL);
+        if (kthreadID >= 0){
+            // start thread and wait for it to end
+            sceKernelStartThread(kthreadID, 0, NULL);
         }
         goto flush;
-	}
-
-	if(!booted) {
-		if(isSystemBooted()) {
-			booted = 1;
-			goto flush;
-		}
 	}
 
 flush:
@@ -295,8 +295,6 @@ int GetHardwareInfo(u32 *ptachyon, u32 *pbaryon, u32 *ppommel, u32 *pmb, u64 *pf
 }
 
 
-
-
 // generate new UMD keys using idsRegeneration and inject into umdman
 int sctrlArkReplaceUmdKeys(){
 	u32 psp_model = sceKernelGetModel();
@@ -318,9 +316,15 @@ int sctrlArkReplaceUmdKeys(){
     strcat(path, "IDSREG.PRX");
 
     SceUID modid = sceKernelLoadModule(path, 0, NULL);
-	if (modid < 0) modid = sceKernelLoadModule("flash0:/kd/ark_idsreg.prx", 0, NULL); // retry flash0
-	if (modid >= 0)
+	if (modid >= 0){
 	    res = sceKernelStartModule(modid, strlen(path) + 1, path, NULL, NULL);
+	    if (res < 0){
+	        goto fake_ids_end;
+	    }
+	}
+	else {
+	    goto fake_ids_end;
+	}
 
     // find idsRegeneration exports
     int (*idsRegenerationSetup)(u32, u32, u32, u32, u64, u32, void*) = 
@@ -343,7 +347,6 @@ int sctrlArkReplaceUmdKeys(){
 	// initialize idsRegeneration with hardware info and new region
 	//
 	//
-	// TODO: GET REGION FROM FILE 
     res = idsRegenerationSetup(tachyon, baryon, pommel, mb, fuseid, region_num, NULL);
 	if (res < 0) goto fake_ids_end;
 
@@ -375,17 +378,22 @@ static int fakeIdStorageLookupForUmd(u16 key, u32 offset, void *buf, u32 len){
 void patch_umd_idslookup(SceModule2* mod){
     // this patch allows us to obtain the buffer where umdman stores the UMD keys
     _idStorageLookup = sctrlHENFindFunction("sceIdStorage_Service", "sceIdStorage_driver", 0x6FE062D1);
-    hookImportByNID(mod, "sceIdStorage_driver", 0x6FE062D1, &fakeIdStorageLookupForUmd);
+    u32 addr = find_Import_ByNID(mod, "sceIdStorage_driver", 0x6FE062D1);
+    _sw(JUMP(&fakeIdStorageLookupForUmd), addr);
+	_sw(NOP, addr+4);
 }
 
 void patch_vsh_region_check(SceModule2* mod){
 	// patch to remove region check in VSH
-	hookImportByNID(mod, "sceVshBridge", 0x5C2983C2, 1);
+	u32 addr = find_Import_ByNID(mod, "sceVshBridge", 0x5C2983C2);
+	_sw(JR_RA, addr);
+	_sw(LI_V0(1), addr+4);
 }
 
 
 int patch_umd_thread(SceSize args, void *argp){
     sceKernelDelayThread(1000000); // wait for system to load
+    read_region_file();
     sctrlArkReplaceUmdKeys(); // replace UMD keys
     sceKernelExitDeleteThread(0);
     return 0;
@@ -394,14 +402,8 @@ int patch_umd_thread(SceSize args, void *argp){
 
 int module_start(SceSize args, void *argp) {
 
-//	_sw(0x44000000, 0xBC800100); // Useful to actually start screen (Credits to Acid_Snake for explaining what is going on here)
-
 	previous = sctrlHENSetStartModuleHandler(PSPOnModuleStart);
 
-	return 0;
-}
-
-int module_stop(SceSize args, void *argp) {
 	return 0;
 }
 

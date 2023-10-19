@@ -14,11 +14,14 @@ BUILD_PRX = 1
 
 PRX_EXPORTS = exports.exp
 
-OBJS = main.o #imports.o
+OBJS = main.o
+
+USE_KERNEL_LIBC=1
+USE_KERNEL_LIBS=1
 
 INCDIR = $(UMDREGIONROOT)/common/include ./include
 
-LIBS = -lc -lpspdebug -lcolordebugger -lpspsystemctrl_kernel
+LIBS = -lc -lpspsystemctrl_kernel
 
 LIBDIR=$(UMDREGIONROOT)/libs
 
