@@ -38,6 +38,9 @@ int main(int argc, char *args[]) {
 
 	pspDebugScreenSetTextColor(0xFF0000FF);
 	printf("Presented by ARK-4 Team (c)2023");
+	pspDebugScreenSetXY(26, 20);
+	pspDebugScreenSetTextColor(0xFF00FF00);
+	printf("Version 1.0");
 
 	sceDisplayWaitVblank();
 	
