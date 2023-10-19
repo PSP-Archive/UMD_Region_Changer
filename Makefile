@@ -27,3 +27,6 @@ pkg: package
 package:
 	zip -r UMD_Region_Changer.zip *
 
+release: all
+	cp README.md dist/ && cd dist/ && zip -r UMD_Region_Changer.zip .
+
