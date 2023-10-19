@@ -7,6 +7,7 @@ SUBDIRS = user \
 
 
 all: #subdirs # user kernel
+	$(MAKE) $@ -C libs
 	$(MAKE) $@ -C user
 	$(MAKE) $@ -C kernel
 	@mkdir -p $(UMDREGIONROOT)/dist/PSP/GAME/UMD_Region_Changer || true
@@ -19,7 +20,7 @@ clean:
 	$(MAKE) $@ -C user
 	$(MAKE) $@ -C kernel
 	@rm -rf $(UMDREGIONROOT)/dist *.zip
-	@find . -type f -name "*.o" -delete -o -name "*.elf" -delete -o -name "*.prx" -delete -o -name "*.PBP" -delete -o -name "*.SFO" -delete
+	@find . -type f -name "*.o" -delete -o -name "*.elf" -delete -o -name "*.prx" -delete -o -name "*.PBP" -delete -o -name "*.SFO" -delete -o -name "*.a" -delete
 	@echo CLEAN
 
 pkg: package

@@ -19,7 +19,7 @@
 #include "graphics.h"
 
 
-PSP_MODULE_INFO("UMD_REGION_CHANGER", 0, 1, 0);
+PSP_MODULE_INFO("UMD_REGION_CHANGER", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER);
 PSP_HEAP_SIZE_KB(4096);
 
@@ -34,19 +34,33 @@ int main(int argc, char *args[]) {
 
 	sceDisplayWaitVblankStart();
 
-	pspDebugScreenSetXY(17, 17);
+	pspDebugScreenSetXY(17, 5);
 
 	pspDebugScreenSetTextColor(0xFF0000FF);
 	printf("Presented by ARK-4 Team (c)2023");
-	pspDebugScreenSetXY(26, 20);
+	pspDebugScreenSetXY(26, 10);
 	pspDebugScreenSetTextColor(0xFF00FF00);
-	printf("Version 1.0");
+	printf("Version 1.1");
+
+	sceKernelDelayThread(3000000);
+
+	if(kuKernelGetModel() == 4) {
+		pspDebugScreenClear();
+		sceDisplayWaitVblank();
+		pspDebugScreenSetTextColor(0xFF0000FF);
+		pspDebugScreenSetXY(25, 10);
+		printf("GO home your drunk.");
+		pspDebugScreenSetXY(10, 20);
+		printf("This is for UMD Movies... UMD does your GO have a UMD?");
+		sceDisplayWaitVblank();
+	
+		sceKernelDelayThread(5000000);
+		sceKernelExitGame();
+	}
+
 
 	sceDisplayWaitVblank();
 	
-	sceKernelDelayThread(3000000);
-
-
 	pspDebugScreenClear();
 	SceCtrlData pad;
 

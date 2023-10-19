@@ -16,7 +16,7 @@ BUILD_PRX = 1
 
 OBJS = main.o graphics.o
 
-LIBS = -lpng -lz -lc -lm -lpspgu -lpspgum -lpspdebug -lpspsystemctrl_user
+LIBS = -lpng -lz -lc -lm -lpspgu -lpspgum -lpspdebug -lpspsystemctrl_user -lpspkubridge
 
 LIBDIR=$(UMDREGIONROOT)/libs
 
