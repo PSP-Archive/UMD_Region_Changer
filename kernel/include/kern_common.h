@@ -1,22 +1,9 @@
 #ifndef KERN_COMMON_H
 #define KERN_COMMON_H
 
-#define UMD_REGION_NAME "UMD_Region_Changer"
-
-#define UMD_REGION_PATH_SIZE 256
-
-#define GO_ROOT "ef0:/"
-#define MS_ROOT "ms0:/"
-
-#define GAME_PATH "PSP/GAME/"
-
 #define CONCAT(a, b) a ## b
 #define EXPAND_CONCAT(a, b) CONCAT(a, b)
 
-
-#define UMD_REGION_PATH MS_ROOT GAME_PATH UMD_REGION_NAME "/"
-#define UMD_REGION_FILE "region.txt"
-#define UMD_REGION_TYPE UMD_REGION_PATH UMD_REGION_FILE
 
 
 

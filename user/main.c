@@ -6,43 +6,49 @@
 #include <pspiofilemgr.h>
 #include <psptypes.h> 
 #include <pspgu.h> 
+#include <pspaudiocodec.h> 
+#include <pspaudiolib.h>
+#include <pspaudio.h> 
 #include <png.h>
-#include "graphics.h"
 #include <systemctrl.h>
+#include <globals.h>
+
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
-#include "matrix.h"
-#include "graphics.h"
+#include <graphics.h>
+#include <mp3player.h>
 
-
-PSP_MODULE_INFO("UMD_REGION_CHANGER", 0, 1, 1);
+PSP_MODULE_INFO("UMD_REGION_CHANGER", 0, 1, 5);
 PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER);
-PSP_HEAP_SIZE_KB(4096);
 
 #define printf pspDebugScreenPrintf
 #define BUF_WIDTH  512
 #define SCR_WIDTH  480
 #define SCR_HEIGHT 272
 
-int main(int argc, char *args[]) {
 
+int main(int argc, char *args[]) {
+	Image* background;
 	pspDebugScreenInit();
+	initGraphics();
+	background = loadImage("BG.PNG", 0);
+
 
 	sceDisplayWaitVblankStart();
-
 	pspDebugScreenSetXY(17, 5);
 
 	pspDebugScreenSetTextColor(0xFF0000FF);
 	printf("Presented by ARK-4 Team (c)2023");
 	pspDebugScreenSetXY(26, 10);
 	pspDebugScreenSetTextColor(0xFF00FF00);
-	printf("Version 1.1");
+	printf("Version 1.5");
 
 	sceKernelDelayThread(3000000);
+
 
 	if(kuKernelGetModel() == 4) {
 		pspDebugScreenClear();
@@ -51,7 +57,7 @@ int main(int argc, char *args[]) {
 		pspDebugScreenSetXY(25, 10);
 		printf("GO home your drunk.");
 		pspDebugScreenSetXY(10, 20);
-		printf("This is for UMD Movies... UMD does your GO have a UMD?");
+		printf("This is for UMD Movies... UMD does your GO/Vita have a UMD Drive?");
 		sceDisplayWaitVblank();
 	
 		sceKernelDelayThread(5000000);
@@ -59,8 +65,6 @@ int main(int argc, char *args[]) {
 	}
 
 
-	sceDisplayWaitVblank();
-	
 	pspDebugScreenClear();
 	SceCtrlData pad;
 
@@ -71,134 +75,103 @@ int main(int argc, char *args[]) {
 	char *regions[4] = {
 		"Default",
 		"Japan",
-		"America",
+		"Region 1: North America, Centeral America",
 		"Europe",
 	};
 
-	int nums = 4;
+#define nums (sizeof(regions)/sizeof(regions[0]))-1
 
-	int offset = 6;
+	int offset = 50;
 
 	int i = 0;
 	int region;
 
+	char selected[64];
+
 	while(1){
+		blitImageToScreen(0, 0, 480, 272, background, 0, 0);	
 		sceDisplayWaitVblankStart();
-		pspDebugScreenSetTextColor(0xFF0000);
-		pspDebugScreenSetXY(0, 0);
+		//pspDebugScreenSetTextColor(0xFF0000);
+		//pspDebugScreenSetXY(0, 0);
 		sceCtrlReadBufferPositive(&pad, 1);	
-		printf("##########################");
-		pspDebugScreenSetXY(0, 1);
-		printf("#                        #");
-		pspDebugScreenSetXY(0, 2);
-		printf("# Please choose a Region #");
-		pspDebugScreenSetXY(0, 3);
-		printf("#                        #");
-		pspDebugScreenSetXY(0, 4);
-		printf("##########################");
-		pspDebugScreenSetXY(0, 6);
+		//printf("##########################");
+		printTextScreen(0, 5, "##########################", 0xFFFF0000);
+		//pspDebugScreenSetXY(0, 1);
+		//printf("#                        #");
+		printTextScreen(0, 10, "#                        #", 0xFFFF0000);
+		//pspDebugScreenSetXY(0, 2);
+		//printf("# Please choose a Region #");
+		printTextScreen(0, 20, "# Please choose a Region #", 0xFFFF0000);
+		//pspDebugScreenSetXY(0, 3);
+		//printf("#                        #");
+		printTextScreen(0, 30, "#                        #", 0xFFFF0000);
+		//pspDebugScreenSetXY(0, 4);
+		//printf("##########################");
+		//pspDebugScreenSetXY(0, 6);
+		printTextScreen(0, 40, "##########################", 0xFFFF0000);
 	
 	// BGR
-		pspDebugScreenSetTextColor(0xFFFFFF);
+	//	pspDebugScreenSetTextColor(0xFFFFFF);
 
 
 		
 		// DEFAULT
-		if(dir==0) {
-			for(i = 0; i<nums;i++) {
+		if(1) {
+			for(i = 0; i<nums+1;i++) {
 				if(i==dir) {
-					pspDebugScreenSetTextColor(0x00FF00);
-					printf("%s%s", arrow, regions[i]);
-					pspDebugScreenSetTextColor(0xFFFFFF);
+					//pspDebugScreenSetTextColor(0x00FF00);
+					sprintf(selected, "%s%s", arrow, regions[i]);
+					printTextScreen(0, offset+=16, selected, 0xFF00FF00);
+					//printf("%s%s", arrow, regions[i]);
+					//pspDebugScreenSetTextColor(0xFFFFFF);
 				}
 				else{
-					pspDebugScreenSetXY(0, offset+=2);
-					printf("%s", regions[i]);
+					//pspDebugScreenSetXY(0, offset+=2);
+					printTextScreen(0, offset+=16, regions[i], 0x00FFFFFF);
 				}
 			}
 			region = dir;
-			pspDebugScreenSetXY(15, 32);
+			//pspDebugScreenSetXY(15, 32);
 
-			pspDebugScreenSetTextColor(0x0000FF);
-			printf("Press (X) to accept and return back to XMB");
-			pspDebugScreenSetTextColor(0xFF0000);
-			offset=6;
+			//pspDebugScreenSetTextColor(0x0000FF);
+			//printf("Press (X) to accept and return back to XMB");
+			//pspDebugScreenSetTextColor(0xFF0000);
+			offset=50;
+			//blitImageToScreen(0, 0, 480, 272, background, 0, 0);	
 		}
 		
 		// BUTTON DOWN
 		if(pad.Buttons & PSP_CTRL_DOWN) {
-			pspDebugScreenClear();
 			dir++;
-			if(dir>3) {
-				dir=0;
-				pspDebugScreenSetTextColor(0xFFFFFF);
-			}
-			else {
-				for(i = 0; i<nums;i++) {
-					pspDebugScreenSetTextColor(0xFFFFFF);
-					if(i==dir) {
-						pspDebugScreenSetTextColor(0x00FF00);
-						pspDebugScreenSetXY(0, offset+=2);
-						printf("%s%s", arrow, regions[i]);
-						pspDebugScreenSetTextColor(0xFFFFFF);
-					}
-					else if(i==0) {
-						pspDebugScreenSetXY(0, 6);
-						printf("%s", regions[i]);
-					}
-					else{
-						pspDebugScreenSetXY(0, offset+=2);
-						printf("%s", regions[i]);
-					}
-				}
-				region = dir;
-				pspDebugScreenSetXY(15, 32);
-				pspDebugScreenSetTextColor(0x0000FF);
-				printf("Press (X) to accept and return back to XMB");
-			}
+			if(dir>nums) dir = 0;
 			sceKernelDelayThread(100000);
-			offset=6;
+			region = dir;
 		}
+
 		// BUTTON UP
-		else if(pad.Buttons & PSP_CTRL_UP) {
-			pspDebugScreenClear();
+		if(pad.Buttons & PSP_CTRL_UP) {
 			dir--;
-			if(dir<0) {
-				dir=3;
-				pspDebugScreenSetTextColor(0xFFFFFF);
-			}
-			
-			if(dir!=0 || dir==3){
-				for(i = 0; i<nums;i++) {
-					if(i==dir){
-						pspDebugScreenSetTextColor(0x00FF00);
-						pspDebugScreenSetXY(0, offset+=2);
-						printf("%s%s", arrow, regions[i]);
-						pspDebugScreenSetTextColor(0xFFFFFF);
-					}
-					else if(i==0) {
-						pspDebugScreenSetXY(0, 6);
-						printf("%s", regions[i]);
-					}
-					else{
-						pspDebugScreenSetXY(0, offset+=2);
-						printf("%s", regions[i]);
-					}
-				}
-				region = dir;
-				pspDebugScreenSetXY(15, 32);
-				pspDebugScreenSetTextColor(0x0000FF);
-				printf("Press (X) to accept and return back to XMB");
-			}
-			sceKernelDelayThread(80000);
-			offset=6;
+			if(dir<0) dir = nums;
+			sceKernelDelayThread(100000);
+			region = dir;
 		}
+
 		// ACCEPT BUTTON
 		else if(pad.Buttons & PSP_CTRL_CROSS) {
+			sceDisplayWaitVblankStart();
+
+			pspAudioInit();
+			MP3_Init(1);
+			MP3_Load("EXIT.MP3");
+			MP3_Play();
+
+			while(!MP3_EndOfStream()) {};
+			MP3_Stop();
+
 			// Need to not hardcode this for category lite reasons. 
 			char mod[] = "ms0:/PSP/GAME/UMD_Region_Changer/UMD_Region_Changer.prx";
 			char region_path[] = "ms0:/PSP/GAME/UMD_Region_Changer/region.txt";
-			const int size = 100*1024;
+			//const int size = 100*1024;
 			static u8 buf[100*1024];
 			SceUID byteRead;
 			SceUID module;
@@ -243,12 +216,12 @@ int main(int argc, char *args[]) {
 
 			module = sceIoOpen(mod, PSP_O_RDONLY, 0777);
 
-			byteRead = sceIoRead(module, buf, size);
-			sceIoClose(module);
+			int size = sceIoLseek(module, 0, PSP_SEEK_END);
+			sceIoLseek(module, 0, PSP_SEEK_SET);
 
-			if(module < 0 || byteRead < 0) {
+			if(module < 0 || size < 0) {
 				pspDebugScreenSetXY(5, 25);
-				printf("Nah your module size %d is fucked or your byteRead is %d", module, byteRead);
+				printf("Nah your module size %d is messed up or your byteRead is %d", module, byteRead);
 				while(1){};
 			}
 			else {
@@ -259,13 +232,21 @@ int main(int argc, char *args[]) {
 			}
 				
 
+			SceUID pid = sceKernelAllocPartitionMemory(PSP_MEMORY_PARTITION_KERNEL, "", PSP_SMEM_Low, size, NULL);
+
+			sceIoRead(module, sceKernelGetBlockHeadAddr(pid), size);
+
 			// Start module before umdman starts
-			sctrlHENLoadModuleOnReboot("/kd/umdman.prx", buf, byteRead, BOOTLOAD_VSH);
+			sctrlHENLoadModuleOnReboot("/kd/umdman.prx", sceKernelGetBlockHeadAddr(pid), size, BOOTLOAD_VSH);
 			// Go back to XMB and enjoy region unlocked goodness.
 			sctrlKernelExitVSH(NULL);
 		}
 	
-		offset=6;
+		offset=50;
+
+		printTextScreen(60, 250, "Press (X) to accept and return back to XMB", 0xFF0000FF);
+
+		flipScreen();
 	
 
 	}

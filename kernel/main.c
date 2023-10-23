@@ -7,6 +7,7 @@
 #include <model.h>
 #include <kern_common.h>
 #include <systemctrl.h>
+#include <globals.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -14,9 +15,9 @@
 #define NOP 0
 #define JUMP(f) (0x08000000 | (((unsigned int)(f) >> 2) & 0x03ffffff))
 
-PSP_MODULE_INFO("UMDREGION_Module", 0x3007, 1, 0);
+PSP_MODULE_INFO("UMDREGION_Module", 0x3007, 1, 5);
 
-STMOD_HANDLER previous;
+static STMOD_HANDLER previous = NULL;
 
 enum {
 	REGION_DEFAULT = 0, // default
@@ -156,13 +157,14 @@ void PSPOnModuleStart(SceModule2 * mod){
             sceKernelStartThread(kthreadID, 0, NULL);
         }
         goto flush;
+		
 	}
 
 flush:
     flushCache();
 
     // Forward to previous Handler
-    if(previous) previous(mod);
+	return previous;
 }
 
 
@@ -400,10 +402,24 @@ int patch_umd_thread(SceSize args, void *argp){
 }
 
 
-int module_start(SceSize args, void *argp) {
+int thread_start(SceSize args, void *argp) {
 
 	previous = sctrlHENSetStartModuleHandler(PSPOnModuleStart);
 
+
+	return sceKernelExitDeleteThread(0);
+}
+
+int module_start(SceSize args, void *argp) {
+
+	SceUID thid = sceKernelCreateThread("UMD_RF", thread_start, 0x22, 0x2000, 0 , NULL);
+
+	if(thid >= 0)
+		sceKernelStartThread(thid, args, argp);
+	return 0;
+}
+
+int module_stop(SceSize args, void *argp) {
 	return 0;
 }
 

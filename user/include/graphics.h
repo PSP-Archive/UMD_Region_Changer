@@ -1,9 +1,13 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <psptypes.h>
 
-#define	PSP_LINE_SIZE 512
+#define    PSP_LINE_SIZE 512
 #define SCREEN_WIDTH 480
 #define SCREEN_HEIGHT 272
 
@@ -13,13 +17,20 @@ typedef u32 Color;
 #define G(color) ((u8)(color >> 8 & 0xFF))
 #define R(color) ((u8)(color & 0xFF))
 
+#define CLEAR_COLOR 0x00000000
+#define WHITE_COLOR 0x00FFFFFF
+#define BLACK_COLOR 0xFF000000
+#define GRAY_COLOR  0xFFCCCCCC
+#define RED_COLOR   0x000000FF
+#define GREEN_COLOR 0xFF00FF00
+
 typedef struct
 {
-	int textureWidth;  // the real width of data, 2^n with n>=0
-	int textureHeight;  // the real height of data, 2^n with n>=0
-	int imageWidth;  // the image width
-	int imageHeight;
-	Color* data;
+    int textureWidth;  // the real width of data, 2^n with n>=0
+    int textureHeight;  // the real height of data, 2^n with n>=0
+    int imageWidth;  // the image width
+    int imageHeight;
+    Color* data;
 } Image;
 
 /**
@@ -29,7 +40,7 @@ typedef struct
  * @param filename - filename of the PNG image to load
  * @return pointer to a new allocated Image struct, or NULL on failure
  */
-extern Image* loadImage(const char* filename);
+extern Image* loadImage(const char* filename, unsigned int offset);
 
 /**
  * Blit a rectangle part of an image to another image.
@@ -248,6 +259,8 @@ extern void flipScreen();
  */
 extern void initGraphics();
 
+extern void enableGraphics();
+
 /**
  * Disable graphics, used for debug text output.
  */
@@ -292,5 +305,9 @@ extern Color* getVramDrawBuffer();
 extern Color* getVramDisplayBuffer();
 
 extern void guStart();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

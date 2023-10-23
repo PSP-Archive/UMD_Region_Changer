@@ -3,6 +3,6 @@
 
 #include <psptypes.h>
 
-static u32* g_vram_base = NULL;
+extern u32* g_vram_base;
 
 #endif

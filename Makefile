@@ -14,6 +14,8 @@ all: #subdirs # user kernel
 	@cp $(UMDREGIONROOT)/user/EBOOT.PBP $(UMDREGIONROOT)/dist/PSP/GAME/UMD_Region_Changer/
 	@cp $(UMDREGIONROOT)/kernel/*.prx $(UMDREGIONROOT)/dist/PSP/GAME/UMD_Region_Changer/
 	@cp $(UMDREGIONROOT)/IDSREG.PRX $(UMDREGIONROOT)/dist/PSP/GAME/UMD_Region_Changer/
+	@cp $(UMDREGIONROOT)/res/matrix_new.png $(UMDREGIONROOT)/dist/PSP/GAME/UMD_Region_Changer/BG.PNG
+	@cp $(UMDREGIONROOT)/res/EXIT.MP3 $(UMDREGIONROOT)/dist/PSP/GAME/UMD_Region_Changer/EXIT.MP3
 	@echo "Build Done"
 
 clean:
