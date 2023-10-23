@@ -20,6 +20,7 @@
 #include <stdbool.h>
 
 #include <graphics.h>
+#include <common.h>
 #include <mp3player.h>
 
 PSP_MODULE_INFO("UMD_REGION_CHANGER", 0, 1, 5);
@@ -35,7 +36,15 @@ int main(int argc, char *args[]) {
 	Image* background;
 	pspDebugScreenInit();
 	initGraphics();
+	/*FILE* fp = fopen(args[0], "rb");
+	PBPHeader header;
+	fread(&header, 1, sizeof(PBPHeader), fp);
+	fclose(fp);
+	*/
+
+
 	background = loadImage("BG.PNG", 0);
+
 
 
 	sceDisplayWaitVblankStart();
@@ -75,7 +84,7 @@ int main(int argc, char *args[]) {
 	char *regions[4] = {
 		"Default",
 		"Japan",
-		"Region 1: North America, Centeral America",
+		"America",
 		"Europe",
 	};
 

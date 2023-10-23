@@ -149,7 +149,7 @@ static int PrintFrameInfo(struct mad_header *Header)
 	break;
     }
     pspDebugScreenSetXY(0, 29);
-    printf("%lu kb/s audio MPEG layer %s stream at %dHz\n", Header->bitrate / 1000, Layer, Header->samplerate);
+    //printf("%lu kb/s audio MPEG layer %s stream at %dHz\n", Header->bitrate / 1000, Layer, Header->samplerate);
     sceDisplayWaitVblankStart();
     return (0);
 }
