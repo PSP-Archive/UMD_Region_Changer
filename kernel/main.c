@@ -17,7 +17,7 @@
 
 PSP_MODULE_INFO("UMDREGION_Module", 0x3007, 1, 5);
 
-static STMOD_HANDLER previous = NULL;
+STMOD_HANDLER previous;
 
 enum {
 	REGION_DEFAULT = 0, // default
@@ -164,7 +164,10 @@ flush:
     flushCache();
 
     // Forward to previous Handler
-	return previous;
+	if(previous)
+		previous(mod);
+	else
+		return NULL;
 }
 
 
@@ -402,20 +405,10 @@ int patch_umd_thread(SceSize args, void *argp){
 }
 
 
-int thread_start(SceSize args, void *argp) {
-
-	previous = sctrlHENSetStartModuleHandler(PSPOnModuleStart);
-
-
-	return sceKernelExitDeleteThread(0);
-}
 
 int module_start(SceSize args, void *argp) {
 
-	SceUID thid = sceKernelCreateThread("UMD_RF", thread_start, 0x22, 0x2000, 0 , NULL);
-
-	if(thid >= 0)
-		sceKernelStartThread(thid, args, argp);
+	previous = sctrlHENSetStartModuleHandler(PSPOnModuleStart);
 	return 0;
 }
 

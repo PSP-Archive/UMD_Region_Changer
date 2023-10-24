@@ -180,7 +180,7 @@ int main(int argc, char *args[]) {
 			// Need to not hardcode this for category lite reasons. 
 			char mod[] = "ms0:/PSP/GAME/UMD_Region_Changer/UMD_Region_Changer.prx";
 			char region_path[] = "ms0:/PSP/GAME/UMD_Region_Changer/region.txt";
-			//const int size = 100*1024;
+			const int size = 100*1024;
 			static u8 buf[100*1024];
 			SceUID byteRead;
 			SceUID module;
@@ -225,8 +225,9 @@ int main(int argc, char *args[]) {
 
 			module = sceIoOpen(mod, PSP_O_RDONLY, 0777);
 
-			int size = sceIoLseek(module, 0, PSP_SEEK_END);
-			sceIoLseek(module, 0, PSP_SEEK_SET);
+			byteRead = sceIoRead(module, buf, size);
+
+			sceIoClose(module);
 
 			if(module < 0 || size < 0) {
 				pspDebugScreenSetXY(5, 25);
@@ -241,12 +242,8 @@ int main(int argc, char *args[]) {
 			}
 				
 
-			SceUID pid = sceKernelAllocPartitionMemory(PSP_MEMORY_PARTITION_KERNEL, "", PSP_SMEM_Low, size, NULL);
-
-			sceIoRead(module, sceKernelGetBlockHeadAddr(pid), size);
-
 			// Start module before umdman starts
-			sctrlHENLoadModuleOnReboot("/kd/umdman.prx", sceKernelGetBlockHeadAddr(pid), size, BOOTLOAD_VSH);
+			sctrlHENLoadModuleOnReboot("/kd/umdman.prx", buf, byteRead, BOOTLOAD_VSH);
 			// Go back to XMB and enjoy region unlocked goodness.
 			sctrlKernelExitVSH(NULL);
 		}
