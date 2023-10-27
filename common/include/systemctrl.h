@@ -24,7 +24,9 @@ enum BootLoadFlags
     BOOTLOAD_GAME = 2,
     BOOTLOAD_UPDATER = 4,
     BOOTLOAD_POPS = 8,
+    BOOTLOAD_APP = 32,
     BOOTLOAD_UMDEMU = 64, /* for original NP9660 */
+    BOOTLOAD_MLNAPP = 128, /* for original NP9660 */
 };
 
 #ifdef __cplusplus

@@ -1,8 +1,8 @@
 #include <pspkernel.h>
 #include <pspsdk.h>
+#include <pspinit.h>
 #include <pspdebug.h>
 #include <pspdisplay.h>
-#include <pspinit.h>
 
 #include <model.h>
 #include <kern_common.h>
@@ -15,7 +15,7 @@
 #define NOP 0
 #define JUMP(f) (0x08000000 | (((unsigned int)(f) >> 2) & 0x03ffffff))
 
-PSP_MODULE_INFO("UMDREGION_Module", 0x3007, 1, 5);
+PSP_MODULE_INFO("UMDREGION_Module", 0x3007, 1, 6);
 
 STMOD_HANDLER previous;
 
@@ -137,38 +137,7 @@ unsigned int find_Import_ByNID(SceModule2 * pMod, char * library, unsigned int n
     return 0;
 }
 
-void PSPOnModuleStart(SceModule2 * mod){
 
-    
-    if(strcmp(mod->modname, "sceUmdMan_driver") == 0) {
-        patch_umd_idslookup(mod);
-        goto flush;
-    }
-
-    if (strcmp(mod->modname, "vsh_module") == 0){
-        patch_vsh_region_check(mod);
-        goto flush;
-    }
-
-    if (strcmp(mod->modname, "impose_plugin_module") == 0){
-        SceUID kthreadID = sceKernelCreateThread( "umd_region_change", &patch_umd_thread, 1, 0x20000, PSP_THREAD_ATTR_VFPU, NULL);
-        if (kthreadID >= 0){
-            // start thread and wait for it to end
-            sceKernelStartThread(kthreadID, 0, NULL);
-        }
-        goto flush;
-		
-	}
-
-flush:
-    flushCache();
-
-    // Forward to previous Handler
-	if(previous)
-		previous(mod);
-	else
-		return NULL;
-}
 
 
 
@@ -317,12 +286,13 @@ int sctrlArkReplaceUmdKeys(){
     // load and start idsRegeneration module
 	// ms0:/PSP/GAME/UMD_Region_Changer/
     char path[UMD_REGION_PATH_SIZE];
-    strcpy(path, UMD_REGION_PATH);
+	strcpy(path, UMD_REGION_PATH);
     strcat(path, "IDSREG.PRX");
+
 
     SceUID modid = sceKernelLoadModule(path, 0, NULL);
 	if (modid >= 0){
-	    res = sceKernelStartModule(modid, strlen(path) + 1, path, NULL, NULL);
+	    res = sceKernelStartModule(modid, strlen(path)+1, path, NULL, NULL); 
 	    if (res < 0){
 	        goto fake_ids_end;
 	    }
@@ -350,8 +320,6 @@ int sctrlArkReplaceUmdKeys(){
     if (res < 0) goto fake_ids_end;
 
 	// initialize idsRegeneration with hardware info and new region
-	//
-	//
     res = idsRegenerationSetup(tachyon, baryon, pommel, mb, fuseid, region_num, NULL);
 	if (res < 0) goto fake_ids_end;
 
@@ -404,10 +372,36 @@ int patch_umd_thread(SceSize args, void *argp){
     return 0;
 }
 
+int PSPOnModuleStart(SceModule2 * mod){
+
+	if(strcmp(mod->modname, "sceUmdMan_driver") == 0) {
+        patch_umd_idslookup(mod);
+        flushCache();
+    }
+
+    if (strcmp(mod->modname, "vsh_module") == 0){
+        patch_vsh_region_check(mod);
+        flushCache();
+    }
+
+    if (strcmp(mod->modname, "impose_plugin_module") == 0){
+        SceUID kthreadID = sceKernelCreateThread( "umd_region_change", &patch_umd_thread, 1, 0x20000, PSP_THREAD_ATTR_VFPU, NULL);
+        if (kthreadID >= 0){
+            // start thread and wait for it to end
+            sceKernelStartThread(kthreadID, 0, NULL);
+        }
+        flushCache();
+		
+	}
+
+
+    // Forward to previous Handler
+	if(previous) previous(mod);
+	else return 0;
+}
 
 
 int module_start(SceSize args, void *argp) {
-
 	previous = sctrlHENSetStartModuleHandler(PSPOnModuleStart);
 	return 0;
 }
