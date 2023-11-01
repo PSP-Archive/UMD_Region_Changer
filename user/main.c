@@ -9,6 +9,10 @@
 #include <pspaudiocodec.h> 
 #include <pspaudiolib.h>
 #include <pspaudio.h> 
+#include <psputils.h> 
+#include <pspthreadman.h> 
+#include <psputility.h> 
+#include <psputility_osk.h> 
 #include <png.h>
 #include <systemctrl.h>
 #include <globals.h>
@@ -23,13 +27,17 @@
 #include <common.h>
 #include <mp3player.h>
 
-PSP_MODULE_INFO("UMD_REGION_CHANGER", 0, 1, 6);
-PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER);
+PSP_MODULE_INFO("UMD_REGION_CHANGER", 0, 1, 8);
+PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_VSH|PSP_THREAD_ATTR_VFPU);
+PSP_HEAP_SIZE_KB(17*1024);
 
 #define printf pspDebugScreenPrintf
 #define BUF_WIDTH  512
 #define SCR_WIDTH  480
 #define SCR_HEIGHT 272
+#define NUM_INPUT_FIELDS    (3)
+#define TEXT_LENGTH         (128)
+
 
 static char arrow[] = "-> ";
 static int dir = 0;
@@ -39,15 +47,22 @@ static int region;
 static int i = -1;
 static char selected[64];
 static char check_path[64];
+static unsigned int __attribute__((aligned(16))) list[262144];
+unsigned short custom[4] = {0};
+unsigned short custom_ret[4] = {0};
+volatile bool debug = false;
+volatile bool init = true;
 
 
 
-static char *regions[4] = {
+static char *regions[5] = {
 		"Default",
 		"Japan",
 		"America",
 		"Europe",
-	};
+		"Custom",
+};
+
 
 #define nums (sizeof(regions)/sizeof(regions[0]))-1
 
@@ -68,7 +83,8 @@ static void playSound(bool type) {
 static void updateScreen(Image* bg, int dir, int type) {
 		blitImageToScreen(0, 0, 480, 272, bg, 0, 0);	
 		for(i = 0; i<nums+1;i++) {
-			if(i==dir) {
+			if(!debug && i == 4) continue;
+			else if(i==dir) {
 				sprintf(selected, "%s%s", arrow, regions[i]);
 				printTextScreen(0, offset+=16, selected, 0xFF00FF00);
 			}
@@ -117,7 +133,7 @@ int main(int argc, char *args[]) {
 	printf("Presented by ARK-4 Team (c)2023");
 	pspDebugScreenSetXY(26, 10);
 	pspDebugScreenSetTextColor(0xFF00FF00);
-	printf("Version 1.6");
+	printf("Version 1.8");
 	pspDebugScreenSetXY(48, 10);
 	pspDebugScreenSetTextColor(0xFF00FF00);
 
@@ -141,36 +157,124 @@ int main(int argc, char *args[]) {
 
 	pspDebugScreenClear();
 	SceCtrlData pad;
+	u32 currentTime;
+	u32 lastClick = 0;
 
 	while(1){
+		sceKernelGetSystemTime(&currentTime);
 		sceDisplayWaitVblankStart();
-		updateScreen(background, dir, trueType);	
 		sceCtrlReadBufferPositive(&pad, 1);	
+		u32 elapsedTime = currentTime - lastClick;	
+		if(pad.Buttons & PSP_CTRL_LTRIGGER) {
+			if(elapsedTime >= 80000) {
+				debug = !debug;
+				lastClick = currentTime;
+			}
+		}
+		updateScreen(background, dir, trueType);	
 		printTextScreen(0, 5,  "##########################", 0xFFFF0000);
 		printTextScreen(0, 10, "#                        #", 0xFFFF0000);
 		printTextScreen(0, 20, "# Please choose a Region #", 0xFFFF0000);
 		printTextScreen(0, 30, "#                        #", 0xFFFF0000);
 		printTextScreen(0, 40, "##########################", 0xFFFF0000);
-	
+
 
 		// BUTTON DOWN
 		if(pad.Buttons & PSP_CTRL_DOWN) {
-			dir++;
-			if(dir>nums) dir = 0;
-			region = dir;
-			trueType = 0;
+			if(elapsedTime >= 80000) {
+				dir++;
+				if(!debug && dir>nums-1) dir = 0;
+				else if(dir>nums) dir = 0;
+				region = dir;
+				trueType = 0;
+				lastClick = currentTime;
+			}
 		}
 
 		// BUTTON UP
 		if(pad.Buttons & PSP_CTRL_UP) {
-			dir--;
-			if(dir<0) dir = nums;
-			region = dir;
-			trueType = 0;
+			if(elapsedTime >= 80000) {
+				dir--;
+				if(!debug && dir<0) dir = nums-1;
+				else if(dir<0) dir = nums;
+				region = dir;
+				trueType = 0;
+				lastClick = currentTime;
+			}
 		}
 
 		// ACCEPT BUTTON
 		if(pad.Buttons & PSP_CTRL_CROSS) {
+			if(dir == 4) {
+				unsigned short desc[] = {'C', 'u', 's', 't', 'o', 'm', ' ', 'R', 'e', 'g', 'i', 'o', 'n', '\0'};
+				unsigned short intext[] = {'0', '\0'};
+
+				SceUtilityOskData oskData;
+				memset(&oskData, 0, sizeof(SceUtilityOskData));
+
+				oskData.language = PSP_UTILITY_OSK_LANGUAGE_ENGLISH;
+				oskData.lines = 1;
+				oskData.unk_24 = 1;
+				oskData.inputtype = PSP_UTILITY_OSK_INPUTTYPE_LATIN_DIGIT;
+				oskData.desc = desc;
+				oskData.intext = intext;
+				oskData.outtextlength = 2;
+				oskData.outtextlimit = 2;
+				oskData.outtext = custom;
+
+
+				SceUtilityOskParams oskParams;
+				memset(&oskParams, 0, sizeof(SceUtilityOskParams));
+
+    			oskParams.base.size = sizeof(SceUtilityOskParams);
+    			oskParams.base.language = PSP_UTILITY_OSK_LANGUAGE_ENGLISH;
+				oskParams.base.buttonSwap = PSP_UTILITY_ACCEPT_CROSS;
+    			oskParams.base.graphicsThread = 17;
+				oskParams.base.accessThread = 19;
+    			oskParams.base.fontThread = 18;
+    			oskParams.base.soundThread = 16;
+    			oskParams.datacount = 1;
+				oskParams.data = &oskData;
+				int done = 0;
+				
+
+				sceUtilityOskInitStart(&oskParams);
+				while(!done) {
+					sceGuStart(GU_DIRECT,list);
+					sceGuClear(GU_COLOR_BUFFER_BIT);
+
+					sceGuFinish();
+					sceGuSync(0,0);
+
+					sceGuClear(GU_COLOR_BUFFER_BIT);
+
+					switch(sceUtilityOskGetStatus())
+					{
+						case PSP_UTILITY_DIALOG_INIT:
+							sceKernelDelayThread(100000);
+							break;
+						case PSP_UTILITY_DIALOG_VISIBLE:
+							sceUtilityOskUpdate(1);
+							break;
+						case PSP_UTILITY_DIALOG_QUIT:
+							sceUtilityOskShutdownStart();
+							break;
+						case PSP_UTILITY_DIALOG_FINISHED:
+							break;
+						case PSP_UTILITY_DIALOG_NONE:
+							done = 1;
+						default :
+							break;
+					}
+
+					sceDisplayWaitVblankStart();
+					sceGuSwapBuffers();
+				}
+
+				custom_ret[0] = oskParams.data[0].outtext[0];
+								
+			}
+			sceUtilityOskShutdownStart();
 			sceDisplayWaitVblankStart();
 			updateScreen(background, dir, 1);
 			// Need to not hardcode this for category lite reasons. 
@@ -190,15 +294,20 @@ int main(int argc, char *args[]) {
 			//3 // Japan
 			//4 // America
 			//5 // Europe (Australia)
-
-			if(region==1)
-				region = 3;
-			else if(region==2)
-				region = 4;
-			else if(region==3)
-				region = 5;
-			else
-				region = 0;
+			if(custom_ret) {
+				int custom_convert = custom_ret[0] - '0';
+				region = custom_convert;
+			}
+			else {
+				if(region==1)
+					region = 3;
+				else if(region==2)
+					region = 4;
+				else if(region==3)
+					region = 5;
+				else
+					region = 0;
+			}
 
 			SceUID save_region = sceIoOpen(region_path, PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0777);
 

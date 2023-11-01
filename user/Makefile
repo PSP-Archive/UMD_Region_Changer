@@ -9,9 +9,7 @@ PSP_EBOOT_ICON = $(UMDREGIONROOT)/res/ICON0.PNG
 #PSP_EBOOT_UNKPNG = $(UMDREGIONROOT)/res/matrix_new.png
 PSP_EBOOT_PIC1 = $(UMDREGIONROOT)/res/PIC1_BLUR.PNG
 PSP_FW_VERSION = 660
-#BUILD_PRX = 1
-
-
+BUILD_PRX = 1
 
 OBJS = main.o \
 	   mp3player.o \
@@ -22,7 +20,7 @@ OBJS = main.o \
 INCDIR = $(UMDREGIONROOT)/libs/libpng $(UMDREGIONROOT)/libs/libmad/include $(UMDREGIONROOT)/common/include include
 LIBDIR= $(UMDREGIONROOT)/libs
 
-LIBS = -lpng -lz -lc -lm -lmad -lpspgu -lpspgum -lpspdebug -lpspdisplay -lpspsystemctrl_user -lpspkubridge -lpspaudiolib -lpspaudio
+LIBS = -lpng -lz -lc -lm -lmad -lpspgu -lpspgum -lpspdebug -lpspdisplay -lpspsystemctrl_user -lpspkubridge -lpspaudiolib -lpspaudio -lpsputility -lpspvfpu
 LDFLAGS = -L libs
 
 
