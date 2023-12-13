@@ -294,7 +294,7 @@ int main(int argc, char *args[]) {
 			//3 // Japan
 			//4 // America
 			//5 // Europe (Australia)
-			if(custom_ret) {
+			if(custom_ret[0] != NULL) {
 				int custom_convert = custom_ret[0] - '0';
 				region = custom_convert;
 			}
